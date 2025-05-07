@@ -177,6 +177,60 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
     final double humanConfidence =
         result!.confidence['human']?.toDouble() ?? 0.0;
     final bool isAiGenerated = aiConfidence > humanConfidence;
+    final features = result!.features;
+
+    Widget circularIndicator(String label, double value, Color color) {
+      return Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 70,
+                height: 70,
+                child: CircularProgressIndicator(
+                  value: value / 100,
+                  strokeWidth: 8,
+                  color: color,
+                  backgroundColor: color.withValues(),
+                ),
+              ),
+              Text(
+                "${value.toStringAsFixed(0)}%",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
+      );
+    }
+
+    Widget featureItem(String name, String description, bool isPresent) {
+      return Row(
+        children: [
+          Icon(
+            isPresent ? Icons.check_circle : Icons.cancel,
+            color: isPresent ? Colors.green : Colors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return Card(
       elevation: 4,
@@ -188,60 +242,58 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isAiGenerated ? "Likely AI-Generated" : "Likely Human-Generated",
+              isAiGenerated ? "AI-Generated" : "Human-Written",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: isAiGenerated ? Colors.indigo : Colors.green,
+                color: isAiGenerated ? Colors.red : Colors.green,
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              "Confidence Levels:",
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 20),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const Text(
-                  "AI:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: aiConfidence / 100,
-                    color: Colors.indigo.shade400,
-                    backgroundColor: Colors.indigo.shade100,
-                    minHeight: 6,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text("${aiConfidence.toStringAsFixed(2)}%"),
+                circularIndicator("AI", aiConfidence, Colors.indigo),
+                circularIndicator("Human", humanConfidence, Colors.green),
               ],
             ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Text(
-                  "Human:",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: humanConfidence / 100,
-                    color: Colors.green.shade400,
-                    backgroundColor: Colors.green.shade100,
-                    minHeight: 6,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text("${humanConfidence.toStringAsFixed(2)}%"),
-              ],
-            ),
+            const SizedBox(height: 20),
+            if (features.isNotEmpty) ...[
+              const Text(
+                "Detected Features:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              featureItem(
+                "Repetitive Words",
+                "Excessive repetition of words",
+                features['repetitive_words'] > 0.5,
+              ),
+              const SizedBox(height: 8),
+              featureItem(
+                "Vocabulary Diversity",
+                "Ratio of unique to total words",
+                features['type_token_ratio'] > 0.5,
+              ),
+              const SizedBox(height: 8),
+              featureItem(
+                "Verb Usage",
+                "Proportion of verbs used",
+                features['verb_ratio'] > 0.5,
+              ),
+              const SizedBox(height: 8),
+              featureItem(
+                '"In Conclusion" Present',
+                "Common AI conclusion phrase",
+                features['word_inconclusion_presence'] > 0.5,
+              ),
+              const SizedBox(height: 8),
+              featureItem(
+                '"This" Present',
+                "Use of demonstrative pronouns",
+                features['word_this_presence'] > 0.5,
+              ),
+            ],
           ],
         ),
       ),
